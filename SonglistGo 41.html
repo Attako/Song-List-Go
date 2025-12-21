@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SongList Go - v01 Smart Time</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --bg-color: #111827; --text-color: #f3f4f6; --card-bg: #1f2937; --input-bg: #111827; --border-color: #374151; }
+        body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); overscroll-behavior: none; }
+        .logo-font { font-family: 'Black Ops One', system-ui; letter-spacing: 1px; }
+        .custom-input { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 12px; border-radius: 8px; width: 100%; display: block; box-sizing: border-box; -webkit-appearance: none; appearance: none; height: 46px; font-size: 1rem; transition: all 0.2s; }
+        .custom-input:focus { border-color: #eab308; outline: none; }
+        .label-text { font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px; display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .song-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; items-center; gap: 0.75rem; transform: translate3d(0,0,0); touch-action: none; }
+        .sortable-ghost { opacity: 0.2; background: #eab308 !important; }
+        .sortable-drag { opacity: 1 !important; background: var(--card-bg); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+<div id="app" class="flex min-h-screen h-screen overflow-hidden">
+
+    <div v-if="isSidebarOpen" class="fixed inset-0 bg-black/50 z-30 md:hidden" @click="isSidebarOpen = false"></div>
+    <div class="fixed md:relative z-40 w-72 h-full bg-gray-900 border-r border-gray-800 flex flex-col transition-transform duration-300" 
+         :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
+        <div class="p-6 border-b border-gray-800 text-center relative bg-gray-900/50 pt-10">
+            <button @click="isSidebarOpen = false" class="absolute top-10 right-4 text-gray-500 md:hidden"><i class="fas fa-times"></i></button>
+            <h1 class="text-2xl font-bold text-yellow-500 logo-font">SONGLIST GO</h1>
+            <div class="text-xs text-gray-500 mt-1">v01 (Smart Time)</div>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+            <div class="mb-2 text-xs text-gray-500 uppercase font-bold tracking-widest">Select Profile</div>
+            <div class="space-y-2">
+                <div v-for="(band, idx) in bands" :key="idx" @click="switchBand(idx)" class="p-3 rounded-lg cursor-pointer flex justify-between items-center transition" :class="currentBandIndex === idx ? 'bg-yellow-600 text-white shadow-lg' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'">
+                    <span class="truncate font-bold">{{ band.name }}</span>
+                    <i v-if="currentBandIndex === idx" class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <button @click="showNewBandModal = true" class="mt-4 w-full py-3 border border-dashed border-gray-600 text-gray-400 rounded hover:text-white hover:border-gray-400 transition text-sm"><i class="fas fa-plus mr-2"></i> Create New Band</button>
+            <hr class="border-gray-700 my-6">
+            <div class="space-y-3">
+                <button @click="exportData" class="w-full text-left text-blue-400 hover:text-blue-300 text-sm"><i class="fas fa-file-export mr-2"></i> Backup Data</button>
+                <button @click="$refs.fileInput.click()" class="w-full text-left text-green-400 hover:text-green-300 text-sm"><i class="fas fa-file-import mr-2"></i> Restore Data</button>
+                <input type="file" ref="fileInput" class="hidden" accept=".json" @change="importData">
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden bg-inherit">
+        <div class="h-16 border-b border-gray-700/50 flex items-center justify-between px-4 shrink-0 z-20 bg-inherit backdrop-blur-sm">
+            <div class="flex items-center gap-3 w-full">
+                <button @click="isSidebarOpen = true" class="text-gray-400 md:hidden"><i class="fas fa-bars fa-lg"></i></button>
+                <div class="flex-1 mr-2">
+                    <input v-model="currentBand.name" @input="requestSave" class="bg-transparent text-lg font-bold w-full border-b border-transparent hover:border-gray-500 focus:border-yellow-500 outline-none transition px-2 py-1 text-white" placeholder="Band Name...">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button @click="showLibrary = true" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-bold shadow whitespace-nowrap">Library</button>
+                <button @click="showPrintModal = true" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-500 flex items-center gap-2 whitespace-nowrap"><i class="fas fa-print"></i> <span class="hidden md:inline">Save / Print</span></button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 pb-32">
+            <div class="max-w-3xl mx-auto">
+                <div class="flex justify-end mb-2 text-xs font-bold uppercase tracking-wider opacity-60">Total Duration: <span class="ml-1 text-yellow-500">{{ totalDuration }}</span></div>
+
+                <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 mb-6 shadow-sm">
+                    <div class="mb-4"><label class="label-text">Venue / Event Name</label><input v-model="gig.venue" class="custom-input" placeholder="e.g. Live at The Bar..."></div>
+                    <div class="flex flex-row space-x-4">
+                        <div class="w-1/2"><label class="label-text">Date</label><input type="date" v-model="gig.date" class="custom-input w-full"></div>
+                        <div class="w-1/2"><label class="label-text">Time</label><input type="time" v-model="gig.time" class="custom-input w-full text-center"></div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 mb-6 shadow-sm">
+                    <h3 class="text-sm font-bold opacity-70 mb-3 uppercase tracking-wider"><i class="fas fa-music mr-1"></i> Add New Song</h3>
+                    <div class="flex gap-3 mb-3">
+                        <div class="w-2/3"><input v-model="newSong.title" @keyup.enter="focusNext('duration')" class="custom-input font-bold text-lg" placeholder="Song Title"></div>
+                        <div class="w-1/3"><input v-model="newSong.duration" id="duration" @keyup.enter="focusNext('key')" class="custom-input text-center" placeholder="Min (e.g. 4.30)"></div>
+                    </div>
+                    <div class="flex gap-3 mb-4">
+                        <div class="w-1/4"><input v-model="newSong.key" id="key" @keyup.enter="focusNext('artist')" class="custom-input text-center font-bold text-yellow-500 text-lg" placeholder="Key"></div>
+                        <div class="w-3/4"><input v-model="newSong.artist" id="artist" class="custom-input text-sm" placeholder="Artist"></div>
+                    </div>
+                    <div class="mb-4"><input v-model="newSong.note" @keyup.enter="addSong" class="custom-input text-sm" placeholder="Note (e.g. Capo 2, Drop D)"></div>
+                    <button @click="addSong" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white py-3 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2"><i class="fas fa-plus-circle text-xl"></i> Add to Setlist</button>
+                </div>
+
+                <div ref="listEl" class="space-y-2">
+                    <div v-for="(song, index) in songs" :key="song.uid" class="song-card group">
+                        <div class="drag-handle opacity-50 px-2 cursor-grab active:cursor-grabbing"><i class="fas fa-bars"></i></div>
+                        <div class="text-xl font-bold opacity-50 w-6 text-center">{{ index + 1 }}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-bold truncate">{{ song.title }}</span>
+                                <span v-if="song.key" class="bg-gray-800 text-yellow-500 text-xs font-bold px-2 py-0.5 rounded border border-gray-600">{{ song.key }}</span>
+                                <span v-if="song.duration" class="bg-blue-900/50 text-blue-300 text-xs px-2 py-0.5 rounded">{{ formatTimeDisplay(song.duration) }}</span>
+                            </div>
+                            <div class="text-sm opacity-60 truncate">{{ song.artist }} <span v-if="song.note" class="text-pink-500 italic">({{ song.note }})</span></div>
+                        </div>
+                        <div class="flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button @click="openEditSong(song, index)" class="text-gray-400 hover:text-blue-400 p-2"><i class="fas fa-pen"></i></button>
+                            <button @click="removeSong(index)" class="text-gray-400 hover:text-red-500 p-2"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div v-if="songs.length === 0" class="text-center py-8 opacity-50 border-2 border-dashed border-gray-600 rounded-lg">List is empty. Start adding songs!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showLibrary" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 w-full max-w-lg rounded-xl flex flex-col h-[80vh] border border-gray-700">
+            <div class="p-4 border-b border-gray-700 flex justify-between"><h3 class="font-bold text-white">Song Library</h3><button @click="showLibrary = false" class="text-gray-400"><i class="fas fa-times"></i></button></div>
+            <div class="p-3"><input v-model="search" class="custom-input !bg-gray-900 !text-white !border-gray-700" placeholder="Search song..."></div>
+            <div class="overflow-y-auto flex-1 p-2">
+                <div v-for="s in filteredLib" :key="s.id" @click="addFromLib(s)" class="p-3 hover:bg-gray-700 text-white rounded flex justify-between border-b border-gray-700 cursor-pointer">
+                    <div><div class="font-bold">{{ s.title }}</div><div class="text-xs opacity-60">{{ s.artist }}</div></div><i class="fas fa-plus text-green-500"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showPrintModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-4 text-center">🖨️ Select Print Layout</h3>
+            <div class="space-y-3 mb-6">
+                <button @click="openPrint('full')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow flex items-center justify-center gap-2"><i class="fas fa-file-alt"></i> A4 Full Page</button>
+                <button @click="openPrint('half')" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-bold shadow flex items-center justify-center gap-2"><i class="fas fa-columns"></i> A4 Split View</button>
+            </div>
+            <div class="bg-gray-700/50 p-3 rounded-lg text-xs text-gray-300 border border-gray-600">
+                <div class="font-bold text-yellow-500 mb-1"><i class="fas fa-lightbulb mr-1"></i> Pro Tips:</div>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>If content is cut off, set <b>Scale to 90%</b> in printer settings.</li>
+                    <li>To save file, select <b>"Save as PDF"</b> as the printer.</li>
+                </ul>
+            </div>
+            <div class="text-center mt-6"><button @click="showPrintModal = false" class="text-gray-400 underline text-sm hover:text-white">Cancel</button></div>
+        </div>
+    </div>
+
+    <div v-if="showNewBandModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4">Create New Band Profile</h3>
+            <input v-model="newBandName" class="custom-input !bg-gray-900 !text-white mb-4" placeholder="Enter Band Name...">
+            <div class="flex gap-3"><button @click="showNewBandModal = false" class="flex-1 py-2 text-gray-400 hover:text-white">Cancel</button><button @click="confirmNewBand" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded font-bold">Create</button></div>
+        </div>
+    </div>
+
+    <div v-if="showEditModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 w-full max-w-md rounded-xl border border-gray-700 p-5 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4 border-b border-gray-700 pb-2"><i class="fas fa-edit text-blue-400 mr-2"></i> Edit Song</h3>
+            <div class="space-y-3">
+                <div><label class="label-text">Title</label><input v-model="editData.title" class="custom-input !bg-gray-900 !text-white font-bold text-lg"></div>
+                <div class="flex gap-3">
+                    <div class="w-1/3"><label class="label-text">Key</label><input v-model="editData.key" class="custom-input !bg-gray-900 !text-white text-center text-yellow-500 font-bold"></div>
+                    <div class="w-1/3"><label class="label-text">Duration</label><input v-model="editData.duration" class="custom-input !bg-gray-900 !text-white text-center"></div>
+                    <div class="w-1/3"><label class="label-text">Artist</label><input v-model="editData.artist" class="custom-input !bg-gray-900 !text-white"></div>
+                </div>
+                <div><label class="label-text">Note</label><input v-model="editData.note" class="custom-input !bg-gray-900 !text-white"></div>
+            </div>
+            <div class="flex gap-3 mt-6"><button @click="showEditModal = false" class="flex-1 py-2 text-gray-400 hover:text-white">Cancel</button><button @click="saveEditSong" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold">Save</button></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const { createApp, nextTick } = Vue;
+
+    createApp({
+        data() {
+            return {
+                isSidebarOpen: false, showLibrary: false, showPrintModal: false, showEditModal: false, showNewBandModal: false,
+                search: '', bands: [], idx: 0, 
+                gig: { venue: '', date: '', time: '' },
+                newSong: { title: '', key: '', artist: '', note: '', duration: '' },
+                songs: [], editData: {}, editingIndex: -1, saveTimeout: null, newBandName: ''
+            }
+        },
+        computed: {
+            currentBand() { return this.bands[this.idx] || { name: 'Loading', library: [] }; },
+            filteredLib() {
+                if (!this.currentBand.library) return [];
+                const t = this.search.toLowerCase();
+                return this.currentBand.library.filter(s => s.title.toLowerCase().includes(t));
+            },
+            totalDuration() {
+                let totalMin = 0, totalSec = 0;
+                this.songs.forEach(s => {
+                    const parsed = this.parseDuration(s.duration);
+                    totalMin += parsed.m;
+                    totalSec += parsed.s;
+                });
+                totalMin += Math.floor(totalSec / 60);
+                totalSec = totalSec % 60;
+                if(totalMin === 0 && totalSec === 0) return '00:00';
+                return `${totalMin}m ${totalSec}s`;
+            }
+        },
+        watch: {
+            currentBand: { deep: true, handler() { this.requestSave(); } },
+            songs: { deep: true, handler() { this.requestSave(); } },
+            gig: { deep: true, handler() { this.requestSave(); } }
+        },
+        mounted() {
+            this.load();
+            setTimeout(() => this.initSort(), 500);
+        },
+        methods: {
+            load() {
+                const d = localStorage.getItem('songlist_pro_clean_v35');
+                if(d) { try { const p = JSON.parse(d); if(p && p.bands) { this.bands = p.bands; this.idx = p.idx || 0; } } catch(e) { this.bands = []; } }
+                if(!this.bands.length) { this.bands.push(this.tpl('My Band')); }
+                this.loadState();
+            },
+            requestSave() { if (this.saveTimeout) clearTimeout(this.saveTimeout); this.saveTimeout = setTimeout(() => { this.sync(); }, 1000); },
+            sync() {
+                if(!this.bands[this.idx]) return;
+                this.bands[this.idx].list = JSON.parse(JSON.stringify(this.songs));
+                this.bands[this.idx].gig = JSON.parse(JSON.stringify(this.gig));
+                localStorage.setItem('songlist_pro_clean_v35', JSON.stringify({ bands: this.bands, idx: this.idx }));
+            },
+            loadState() {
+                const b = this.bands[this.idx];
+                if(b) { this.songs = b.list ? JSON.parse(JSON.stringify(b.list)) : []; this.gig = b.gig ? JSON.parse(JSON.stringify(b.gig)) : { venue: '', date: '', time: '' }; }
+            },
+            tpl(name) { return { name, library: [], list: [], gig: { venue: '', date: new Date().toISOString().slice(0, 10), time: '' } }; },
+            
+            switchBand(i) { this.sync(); this.idx = i; this.loadState(); this.isSidebarOpen = false; },
+            confirmNewBand() { if(this.newBandName) { this.bands.push(this.tpl(this.newBandName)); this.switchBand(this.bands.length-1); this.newBandName = ''; this.showNewBandModal = false; } },
+            
+            exportData() {
+                const dataStr = JSON.stringify({ bands: this.bands, idx: this.idx });
+                const blob = new Blob([dataStr], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `SongList_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            },
+            importData(e) {
+                const file = e.target.files[0]; if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (res) => { try { const p = JSON.parse(res.target.result); if(p.bands) { this.bands = p.bands; this.idx = p.idx || 0; this.loadState(); this.sync(); alert('Data Restored!'); } } catch(err) { alert('Invalid File'); } };
+                reader.readAsText(file);
+            },
+
+            addSong() {
+                if(!this.newSong.title) return;
+                const s = { ...this.newSong, uid: Date.now(), id: Date.now() };
+                this.songs.push(s);
+                if(!this.currentBand.library.find(x => x.title === s.title)) { this.currentBand.library.push({...s}); }
+                this.newSong = { title: '', key: '', artist: '', note: '', duration: '' };
+                document.getElementById('key').blur();
+                nextTick(() => this.$refs.listEl.lastElementChild?.scrollIntoView({ behavior: 'smooth' }));
+                this.sync(); 
+            },
+            addFromLib(s) { this.songs.push({...s, uid: Date.now()}); this.showLibrary = false; this.sync(); },
+            removeSong(i) { this.songs.splice(i, 1); this.sync(); },
+            focusNext(id) { document.getElementById(id).focus(); },
+            openEditSong(song, index) { this.editData = { ...song }; this.editingIndex = index; this.showEditModal = true; },
+            saveEditSong() {
+                if (this.editingIndex > -1) {
+                    this.songs[this.editingIndex] = { ...this.editData };
+                    const libIndex = this.currentBand.library.findIndex(l => l.title === this.editData.title || l.id === this.editData.id);
+                    if (libIndex > -1) { this.currentBand.library[libIndex] = { ...this.currentBand.library[libIndex], ...this.editData }; }
+                }
+                this.showEditModal = false; this.sync(); 
+            },
+
+            // --- [SMART TIME PARSER] ---
+            parseDuration(input) {
+                if(!input) return { m: 0, s: 0 };
+                // แปลง . , เป็น : ให้หมด
+                let clean = input.toString().replace(/[.,]/g, ':').trim();
+                // ถ้าเป็นตัวเลขล้วน (เช่น 5) ให้เติม :00 (เป็น 5:00)
+                if(!clean.includes(':') && !isNaN(clean)) clean += ':00';
+                
+                const parts = clean.split(':');
+                const m = parseInt(parts[0]) || 0;
+                const s = parseInt(parts[1]) || 0;
+                return { m, s };
+            },
+            formatTimeDisplay(input) {
+                const t = this.parseDuration(input);
+                if(t.m === 0 && t.s === 0) return input; // ถ้าแกะไม่ออกให้โชว์ตามเดิม
+                return `${t.m}:${t.s.toString().padStart(2, '0')}`; // โชว์แบบมาตรฐาน 4:05
+            },
+
+            initSort() { Sortable.create(this.$refs.listEl, { handle: '.drag-handle', animation: 150, delay: 100, delayOnTouchOnly: true, forceFallback: true, fallbackClass: 'sortable-drag', ghostClass: 'sortable-ghost', onEnd: (e) => { const x = this.songs.splice(e.oldIndex, 1)[0]; this.songs.splice(e.newIndex, 0, x); this.sync(); } }); },
+            formatDate(d) { if(!d) return ''; const x = new Date(d); return x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }); },
+
+            openPrint(layoutMode) {
+                this.showPrintModal = false; 
+                const generateContent = () => {
+                    const header = `<div class="header"><div class="band">${this.gig.bandName || this.currentBand.name}</div><div class="meta">${this.gig.venue} <br> ${this.formatDate(this.gig.date)} ${this.gig.time ? '@ '+this.gig.time : ''}</div></div>`;
+                    const rows = this.songs.map((s, i) => {
+                        // ใช้ smart display ในหน้า Print ด้วย
+                        const timeDisplay = s.duration ? `[${this.formatTimeDisplay(s.duration)}] ` : '';
+                        return `<div class="row"><div class="idx">${i + 1}</div><div class="content"><div class="line1"><span class="title">${s.title}</span>${s.key ? `<span class="key">${s.key}</span>` : ''}</div><div class="line2"><span class="art">${s.artist}</span><span class="note">${timeDisplay}${s.note ? '(' + s.note + ')' : ''}</span></div></div></div>`;
+                    }).join('');
+                    return header + rows;
+                };
+                let bodyContent = layoutMode === 'half' ? `<div class="grid-half"><div class="col-left">${generateContent()}</div><div class="col-right">${generateContent()}</div></div>` : `<div>${generateContent()}</div>`;
+                const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Setlist Print</title><style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap'); body { margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; background: #555; display: flex; justify-content: center; } .sheet { background: white; width: 210mm; min-height: 297mm; padding: 5mm; box-sizing: border-box; margin: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.5); } .grid-half { display: grid; grid-template-columns: 1fr 1fr; width: 100%; column-gap: 5mm; } .col-left { border-right: 1px dashed #999; padding-right: 3mm; } .col-right { padding-left: 3mm; } .header { border-bottom: 2pt solid black; margin-bottom: 2mm; padding-bottom: 1mm; display: flex; justify-content: space-between; align-items: flex-end; } .band { font-size: 16pt; font-weight: 800; text-transform: uppercase; line-height: 1; } .meta { font-size: 10pt; font-weight: 600; text-align: right; color: #333; } .row { display: flex; align-items: baseline; padding: 1mm 0; border-bottom: 1px solid #ccc; page-break-inside: avoid; } .idx { width: 8mm; text-align: center; font-weight: 800; font-size: 14pt; flex-shrink: 0; padding-top: 1px; } .content { flex: 1; margin-left: 2mm; overflow: hidden; } .line1 { display: flex; justify-content: space-between; align-items: baseline; } .title { font-size: 15pt; font-weight: 700; line-height: 1.2; padding-bottom: 1px; } .key { border: 1.5pt solid black; padding: 0 3px; border-radius: 3px; font-weight: 800; font-size: 11pt; margin-left: 5px; vertical-align: middle; } .line2 { display: flex; justify-content: space-between; margin-top: 0; } .art { font-size: 10pt; color: #444; } .note { font-size: 10pt; font-style: italic; font-weight: 600; text-align: right; flex: 1; margin-left: 5px; } @media print { body { background: white; margin: 0; display: block; } .sheet { width: 100%; margin: 0; box-shadow: none; padding: 5mm; } } </style></head><body><div class="sheet">${bodyContent}</div><script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }<\/script></body></html>`;
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                window.open(URL.createObjectURL(blob), '_blank');
+            }
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
