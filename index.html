@@ -28,10 +28,19 @@
         .checkbox-wrapper { display: flex; items-center; gap: 0.5rem; cursor: pointer; user-select: none; }
         .checkbox-wrapper input { width: 1.25rem; height: 1.25rem; border-radius: 0.25rem; accent-color: #ca8a04; cursor: pointer; }
         
-        /* Help Modal Styles */
         .help-section { margin-bottom: 1.5rem; border-bottom: 1px solid #374151; padding-bottom: 1rem; }
         .help-section:last-child { border-bottom: none; }
         .help-title { font-weight: 700; color: #eab308; margin-bottom: 0.5rem; display: flex; items-center; gap: 0.5rem; }
+
+        /* Gear Item Style */
+        .gear-item { display: flex; gap: 1rem; background: #1f2937; padding: 1rem; border-radius: 0.75rem; border: 1px solid #374151; margin-bottom: 0.75rem; align-items: center; transition: transform 0.2s; }
+        .gear-item:hover { transform: translateY(-2px); border-color: #eab308; }
+        /* Image Box */
+        .gear-img-box { width: 4.5rem; height: 4.5rem; background: white; border-radius: 0.5rem; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 2px solid #374151; }
+        .gear-img-box img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .shop-btn { background: #ea580c; color: white; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: bold; text-decoration: none; display: inline-block; margin-top: 0.5rem; }
+        .shop-btn:hover { background: #c2410c; }
     </style>
 </head>
 <body>
@@ -44,7 +53,7 @@
         <div class="p-6 border-b border-gray-800 text-center relative bg-gray-900/50 pt-10">
             <button @click="isSidebarOpen = false" class="absolute top-10 right-4 text-gray-500 md:hidden"><i class="fas fa-times"></i></button>
             <h1 class="text-2xl font-bold text-yellow-500 logo-font">SONGLIST GO</h1>
-            <div class="text-xs text-gray-500 mt-1">v1.0.8</div>
+            <div class="text-xs text-gray-500 mt-1">v1.1.1</div>
         </div>
         <div class="p-4 flex-1 overflow-y-auto flex flex-col">
             <div class="mb-2 text-xs text-gray-500 uppercase font-bold tracking-widest">Select Profile</div>
@@ -59,8 +68,8 @@
             <div class="flex-1"></div>
 
             <div class="space-y-3 pt-6 border-t border-gray-700">
+                <button @click="showGearModal = true" class="w-full text-left text-orange-400 hover:text-orange-300 text-sm font-bold"><i class="fas fa-shopping-bag mr-2 w-5 text-center"></i> Recommended Gear</button>
                 <button @click="showHelpModal = true" class="w-full text-left text-yellow-500 hover:text-yellow-400 text-sm font-bold"><i class="fas fa-question-circle mr-2 w-5 text-center"></i> Help / Guide</button>
-                
                 <button @click="exportData" class="w-full text-left text-blue-400 hover:text-blue-300 text-sm"><i class="fas fa-file-export mr-2 w-5 text-center"></i> Backup Data</button>
                 <button @click="$refs.fileInput.click()" class="w-full text-left text-green-400 hover:text-green-300 text-sm"><i class="fas fa-file-import mr-2 w-5 text-center"></i> Restore Data</button>
                 <input type="file" ref="fileInput" class="hidden" accept=".json" @change="importData">
@@ -139,6 +148,29 @@
         </div>
     </div>
 
+    <div v-if="showGearModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 w-full max-w-lg rounded-xl flex flex-col h-[70vh] border border-gray-700 shadow-2xl">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900/50 rounded-t-xl">
+                <h3 class="font-bold text-white text-lg"><i class="fas fa-star text-orange-400 mr-2"></i> Recommended Gear</h3>
+                <button @click="showGearModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="overflow-y-auto flex-1 p-4">
+                <p class="text-gray-400 text-sm mb-4 text-center italic">"Tools that I use personally to make gigging easier. Support the app by checking them out!"</p>
+                <div v-for="(item, idx) in gearList" :key="idx" class="gear-item">
+                    <div class="gear-img-box"><img :src="item.img" alt="Gear Image"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold text-white truncate">{{ item.name }}</div>
+                        <div class="text-xs text-gray-400 mb-1 line-clamp-2">{{ item.desc }}</div>
+                        <a :href="item.link" target="_blank" class="shop-btn">Check Price <i class="fas fa-external-link-alt ml-1"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 border-t border-gray-700 text-center text-xs text-gray-500">
+                *Affiliate links help support SongList Go development.
+            </div>
+        </div>
+    </div>
+
     <div v-if="showHelpModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
         <div class="bg-gray-800 w-full max-w-lg rounded-xl flex flex-col h-[80vh] border border-gray-700 shadow-2xl">
             <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900/50 rounded-t-xl">
@@ -148,180 +180,26 @@
                 </div>
                 <button @click="showHelpModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times fa-lg"></i></button>
             </div>
-            
             <div class="overflow-y-auto flex-1 p-6 text-gray-300 text-sm leading-relaxed">
-                
                 <div v-if="helpLang === 'TH'">
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-music"></i> 1. การเพิ่มเพลง (Add Songs)</div>
-                        <ul class="list-disc list-inside space-y-1 ml-2">
-                            <li><b>พิมพ์เอง:</b> ใส่ชื่อเพลง แล้วกด Enter เพื่อข้ามไปช่องถัดไปได้เลย</li>
-                            <li><b>Paste List (แนะนำ!):</b> กดปุ่ม <span class="text-blue-400"><i class="fas fa-paste"></i> Paste List</span> แล้วก๊อบปี้รายชื่อเพลงจาก Line หรือ Note มาวางทีละ 20-30 เพลงได้เลย ระบบจะตัดเลขข้อ (1., 2.) ออกให้เอง</li>
-                        </ul>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-sort"></i> 2. การจัดลำดับ (Reorder)</div>
-                        <p class="ml-2">แตะค้างที่ <b>"ไอคอน 3 ขีด (☰)"</b> ด้านซ้ายของเพลง แล้วลากขึ้นลงเพื่อเปลี่ยนลำดับ</p>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-book"></i> 3. คลังเพลง (Library)</div>
-                        <p class="ml-2">ทุกเพลงที่คุณเพิ่มจะถูกจำไว้ใน <b>Library</b> โดยอัตโนมัติ ครั้งหน้าถ้าจะเล่นเพลงเดิม กดปุ่ม <b>Library</b> มุมขวาบนแล้วค้นหาได้เลย ไม่ต้องพิมพ์ใหม่</p>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-print"></i> 4. การพิมพ์และเซฟ (Print/Save)</div>
-                        <ul class="list-disc list-inside space-y-1 ml-2">
-                            <li>กดปุ่ม <span class="text-green-500">Save / Print</span></li>
-                            <li>เลือก <b>Full Page</b> (ตัวใหญ่ เต็มหน้า) หรือ <b>Split View</b> (แบ่งครึ่ง ประหยัดกระดาษ)</li>
-                            <li><b>Options:</b> ติ๊กเลือกได้ว่าจะโชว์ Key, Time หรือ Note หรือไม่</li>
-                            <li><b>วิธี Save PDF:</b> ในหน้าพิมพ์ ให้เลือกเครื่องพรินต์เป็น <i>"Save as PDF"</i></li>
-                        </ul>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-file-export"></i> 5. ย้ายเครื่อง (Backup/Restore)</div>
-                        <p class="ml-2">ข้อมูลจะอยู่ในเครื่องนี้เท่านั้น หากเปลี่ยนมือถือ:</p>
-                        <ul class="list-disc list-inside ml-2">
-                            <li>เครื่องเก่า: กด <b>Backup Data</b> จะได้ไฟล์ .json</li>
-                            <li>เครื่องใหม่: กด <b>Restore Data</b> แล้วเลือกไฟล์เดิม ข้อมูลจะมาครบ</li>
-                        </ul>
-                    </div>
+                    <div class="help-section"><div class="help-title"><i class="fas fa-music"></i> 1. การเพิ่มเพลง (Add Songs)</div><ul class="list-disc list-inside space-y-1 ml-2"><li><b>พิมพ์เอง:</b> ใส่ชื่อเพลง แล้วกด Enter</li><li><b>Paste List:</b> กดปุ่ม <span class="text-blue-400">Paste List</span> แล้ววางรายชื่อเพลงจาก Line ได้เลย</li></ul></div>
+                    <div class="help-section"><div class="help-title"><i class="fas fa-sort"></i> 2. การจัดลำดับ</div><p class="ml-2">แตะค้างที่ <b>"ไอคอน 3 ขีด (☰)"</b> แล้วลากเพื่อย้าย</p></div>
+                    <div class="help-section"><div class="help-title"><i class="fas fa-print"></i> 3. พิมพ์/Save PDF</div><ul class="list-disc list-inside ml-2"><li>กด <b>Save / Print</b> เลือกแบบ Full หรือ Split</li><li>ติ๊ก Options เพื่อโชว์/ซ่อน Key และ Time</li></ul></div>
                 </div>
-
                 <div v-if="helpLang === 'EN'">
-                     <div class="help-section">
-                        <div class="help-title"><i class="fas fa-music"></i> 1. Adding Songs</div>
-                        <ul class="list-disc list-inside space-y-1 ml-2">
-                            <li><b>Manual:</b> Type title and press Enter to jump to the next field.</li>
-                            <li><b>Batch Import (Pro Tip!):</b> Click <span class="text-blue-400"><i class="fas fa-paste"></i> Paste List</span>. Copy your entire setlist from text messages/notes and paste it here. The app automatically cleans up numbering (1., 2.).</li>
-                        </ul>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-sort"></i> 2. Reordering</div>
-                        <p class="ml-2">Touch and hold the <b>"3-bars icon (☰)"</b> on the left side of any song to drag and drop.</p>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-book"></i> 3. Library</div>
-                        <p class="ml-2">Every song you add is auto-saved to the <b>Library</b>. Click the <b>Library</b> button to search and add previously played songs instantly.</p>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-print"></i> 4. Print & Save PDF</div>
-                        <ul class="list-disc list-inside space-y-1 ml-2">
-                            <li>Click <span class="text-green-500">Save / Print</span>.</li>
-                            <li>Choose <b>Full Page</b> or <b>Split View</b> (2 columns).</li>
-                            <li><b>Options:</b> Toggle Key, Time, or Note visibility.</li>
-                            <li><b>To Save PDF:</b> In the print dialog, select printer as <i>"Save as PDF"</i>.</li>
-                        </ul>
-                    </div>
-                    <div class="help-section">
-                        <div class="help-title"><i class="fas fa-file-export"></i> 5. Backup & Restore</div>
-                        <p class="ml-2">Data is stored on this device. To move to a new phone:</p>
-                        <ul class="list-disc list-inside ml-2">
-                            <li>Old Device: Click <b>Backup Data</b> to download a .json file.</li>
-                            <li>New Device: Click <b>Restore Data</b> and select that file.</li>
-                        </ul>
-                    </div>
-                </div>
-
-            </div>
-            <div class="p-4 border-t border-gray-700 text-center">
-                <button @click="showHelpModal = false" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-bold">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <div v-if="showImportModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 w-full max-w-lg rounded-xl flex flex-col h-[70vh] border border-gray-700 shadow-2xl">
-            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h3 class="font-bold text-white text-lg"><i class="fas fa-paste mr-2 text-blue-400"></i> Batch Import</h3>
-                <button @click="showImportModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="p-4 flex-1 flex flex-col">
-                <p class="text-sm text-gray-400 mb-2">Paste your song list here. One song per line.</p>
-                <textarea v-model="importText" class="w-full flex-1 bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 outline-none resize-none" placeholder="1. Wonderwall - Oasis&#10;2. Yellow&#10;3. Zombie"></textarea>
-            </div>
-            <div class="p-4 border-t border-gray-700 flex gap-3">
-                <button @click="showImportModal = false" class="flex-1 py-3 text-gray-400 hover:text-white">Cancel</button>
-                <button @click="processImport" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg">Import Songs</button>
-            </div>
-        </div>
-    </div>
-
-    <div v-if="showLibrary" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 w-full max-w-lg rounded-xl flex flex-col h-[80vh] border border-gray-700">
-            <div class="p-4 border-b border-gray-700 flex justify-between"><h3 class="font-bold text-white">Song Library</h3><button @click="showLibrary = false" class="text-gray-400"><i class="fas fa-times"></i></button></div>
-            <div class="p-3"><input v-model="search" class="custom-input !bg-gray-900 !text-white !border-gray-700" placeholder="Search song..."></div>
-            <div class="overflow-y-auto flex-1 p-2">
-                <div v-for="s in filteredLib" :key="s.id" @click="addFromLib(s)" class="p-3 hover:bg-gray-700 text-white rounded flex justify-between border-b border-gray-700 cursor-pointer">
-                    <div><div class="font-bold">{{ s.title }}</div><div class="text-xs opacity-60">{{ s.artist }}</div></div><i class="fas fa-plus text-green-500"></i>
+                     <div class="help-section"><div class="help-title"><i class="fas fa-music"></i> 1. Add Songs</div><ul class="list-disc list-inside space-y-1 ml-2"><li><b>Manual:</b> Type title & Enter.</li><li><b>Batch Import:</b> Click <span class="text-blue-400">Paste List</span> and paste song list from chat.</li></ul></div>
+                    <div class="help-section"><div class="help-title"><i class="fas fa-sort"></i> 2. Reorder</div><p class="ml-2">Touch & hold <b>"3-bars icon (☰)"</b> to drag.</p></div>
                 </div>
             </div>
+            <div class="p-4 border-t border-gray-700 text-center"><button @click="showHelpModal = false" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-bold">Close</button></div>
         </div>
     </div>
 
-    <div v-if="showPrintModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl">
-            <h3 class="text-xl font-bold text-white mb-4 text-center">🖨️ Print Settings</h3>
-            
-            <div class="bg-gray-900/50 rounded-lg p-3 mb-5 border border-gray-700">
-                <div class="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Show Data:</div>
-                <div class="flex justify-between px-2">
-                    <label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showKey"><span class="text-sm font-bold text-gray-300">Key</span></label>
-                    <label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showTime"><span class="text-sm font-bold text-gray-300">Time</span></label>
-                    <label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showNote"><span class="text-sm font-bold text-gray-300">Note</span></label>
-                </div>
-            </div>
-
-            <div class="space-y-3 mb-6">
-                <button @click="openPrint('full')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow flex items-center justify-center gap-2"><i class="fas fa-file-alt"></i> A4 Full Page</button>
-                <button @click="openPrint('half')" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-bold shadow flex items-center justify-center gap-2"><i class="fas fa-columns"></i> A4 Split View</button>
-            </div>
-            
-            <div class="bg-gray-700/50 p-3 rounded-lg text-xs text-gray-300 border border-gray-600">
-                <div class="font-bold text-yellow-500 mb-1"><i class="fas fa-lightbulb mr-1"></i> Pro Tips:</div>
-                <ul class="list-disc list-inside space-y-1">
-                    <li>If content is cut off, set <b>Scale to 90%</b> in printer settings.</li>
-                    <li>To save file, select <b>"Save as PDF"</b> as the printer.</li>
-                </ul>
-            </div>
-
-            <div class="text-center mt-6"><button @click="showPrintModal = false" class="text-gray-400 underline text-sm hover:text-white">Cancel</button></div>
-        </div>
-    </div>
-
-    <div v-if="showDonateModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl text-center relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 to-yellow-400"></div>
-            <div class="w-16 h-16 bg-yellow-600/20 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-coffee text-3xl text-yellow-500"></i></div>
-            <h3 class="text-xl font-bold text-white mb-2">Fuel the Developer ☕</h3>
-            <p class="text-gray-400 text-sm mb-6">If you love this app and it makes your gig easier, you can treat me to a coffee!</p>
-            <div class="bg-white rounded-lg p-4 border border-gray-700 mb-4 inline-block"><img src="donate.jpg" alt="PromptPay QR" class="w-48 h-48 mx-auto object-contain"></div>
-            <div class="text-xs text-gray-500 mb-6">Scan with Bank App</div>
-            <button @click="showDonateModal = false" class="text-gray-400 hover:text-white text-sm">Close</button>
-        </div>
-    </div>
-
-    <div v-if="showNewBandModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl">
-            <h3 class="text-lg font-bold text-white mb-4">Create New Band Profile</h3>
-            <input v-model="newBandName" class="custom-input !bg-gray-900 !text-white mb-4" placeholder="Enter Band Name...">
-            <div class="flex gap-3"><button @click="showNewBandModal = false" class="flex-1 py-2 text-gray-400 hover:text-white">Cancel</button><button @click="confirmNewBand" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded font-bold">Create</button></div>
-        </div>
-    </div>
-
-    <div v-if="showEditModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 w-full max-w-md rounded-xl border border-gray-700 p-5 shadow-2xl">
-            <h3 class="text-lg font-bold text-white mb-4 border-b border-gray-700 pb-2"><i class="fas fa-edit text-blue-400 mr-2"></i> Edit Song</h3>
-            <div class="space-y-3">
-                <div><label class="label-text">Title</label><input v-model="editData.title" class="custom-input !bg-gray-900 !text-white font-bold text-lg"></div>
-                <div class="flex gap-3">
-                    <div class="w-1/3"><label class="label-text">Key</label><input v-model="editData.key" class="custom-input !bg-gray-900 !text-white text-center text-yellow-500 font-bold"></div>
-                    <div class="w-1/3"><label class="label-text">Duration</label><input v-model="editData.duration" class="custom-input !bg-gray-900 !text-white text-center"></div>
-                    <div class="w-1/3"><label class="label-text">Artist</label><input v-model="editData.artist" class="custom-input !bg-gray-900 !text-white"></div>
-                </div>
-                <div><label class="label-text">Note</label><input v-model="editData.note" class="custom-input !bg-gray-900 !text-white"></div>
-            </div>
-            <div class="flex gap-3 mt-6"><button @click="showEditModal = false" class="flex-1 py-2 text-gray-400 hover:text-white">Cancel</button><button @click="saveEditSong" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold">Save</button></div>
-        </div>
-    </div>
+    <div v-if="showImportModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"><div class="bg-gray-800 w-full max-w-lg rounded-xl flex flex-col h-[70vh] border border-gray-700 shadow-2xl"><div class="p-4 border-b border-gray-700 flex justify-between items-center"><h3 class="font-bold text-white text-lg"><i class="fas fa-paste mr-2 text-blue-400"></i> Batch Import</h3><button @click="showImportModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button></div><div class="p-4 flex-1 flex flex-col"><p class="text-sm text-gray-400 mb-2">Paste song list (one per line).</p><textarea v-model="importText" class="w-full flex-1 bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 outline-none resize-none" placeholder="1. Wonderwall&#10;2. Yellow"></textarea></div><div class="p-4 border-t border-gray-700 flex gap-3"><button @click="showImportModal = false" class="flex-1 py-3 text-gray-400 hover:text-white">Cancel</button><button @click="processImport" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg">Import</button></div></div></div>
+    <div v-if="showPrintModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"><div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl"><h3 class="text-xl font-bold text-white mb-4 text-center">🖨️ Print Settings</h3><div class="bg-gray-900/50 rounded-lg p-3 mb-5 border border-gray-700"><div class="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Show Data:</div><div class="flex justify-between px-2"><label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showKey"><span class="text-sm font-bold text-gray-300">Key</span></label><label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showTime"><span class="text-sm font-bold text-gray-300">Time</span></label><label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showNote"><span class="text-sm font-bold text-gray-300">Note</span></label></div></div><div class="space-y-3 mb-6"><button @click="openPrint('full')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow flex items-center justify-center gap-2"><i class="fas fa-file-alt"></i> A4 Full Page</button><button @click="openPrint('half')" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-bold shadow flex items-center justify-center gap-2"><i class="fas fa-columns"></i> A4 Split View</button></div><div class="bg-gray-700/50 p-3 rounded-lg text-xs text-gray-300 border border-gray-600"><div class="font-bold text-yellow-500 mb-1"><i class="fas fa-lightbulb mr-1"></i> Pro Tips:</div><ul class="list-disc list-inside space-y-1"><li>If cut off, set <b>Scale to 90%</b>.</li><li>To save, select <b>"Save as PDF"</b>.</li></ul></div><div class="text-center mt-6"><button @click="showPrintModal = false" class="text-gray-400 underline text-sm hover:text-white">Cancel</button></div></div></div>
+    <div v-if="showDonateModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"><div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 to-yellow-400"></div><div class="w-16 h-16 bg-yellow-600/20 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-coffee text-3xl text-yellow-500"></i></div><h3 class="text-xl font-bold text-white mb-2">Fuel the Developer ☕</h3><p class="text-gray-400 text-sm mb-6">If you love this app, you can treat me to a coffee!</p><div class="bg-white rounded-lg p-4 border border-gray-700 mb-4 inline-block"><img src="donate.jpg" alt="PromptPay QR" class="w-48 h-48 mx-auto object-contain"></div><div class="text-xs text-gray-500 mb-6">Scan with Bank App</div><button @click="showDonateModal = false" class="text-gray-400 hover:text-white text-sm">Close</button></div></div>
+    <div v-if="showNewBandModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"><div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl"><h3 class="text-lg font-bold text-white mb-4">Create New Band Profile</h3><input v-model="newBandName" class="custom-input !bg-gray-900 !text-white mb-4" placeholder="Enter Band Name..."><div class="flex gap-3"><button @click="showNewBandModal = false" class="flex-1 py-2 text-gray-400 hover:text-white">Cancel</button><button @click="confirmNewBand" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded font-bold">Create</button></div></div></div>
+    <div v-if="showEditModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"><div class="bg-gray-800 w-full max-w-md rounded-xl border border-gray-700 p-5 shadow-2xl"><h3 class="text-lg font-bold text-white mb-4 border-b border-gray-700 pb-2"><i class="fas fa-edit text-blue-400 mr-2"></i> Edit Song</h3><div class="space-y-3"><div><label class="label-text">Title</label><input v-model="editData.title" class="custom-input !bg-gray-900 !text-white font-bold text-lg"></div><div class="flex gap-3"><div class="w-1/3"><label class="label-text">Key</label><input v-model="editData.key" class="custom-input !bg-gray-900 !text-white text-center text-yellow-500 font-bold"></div><div class="w-1/3"><label class="label-text">Duration</label><input v-model="editData.duration" class="custom-input !bg-gray-900 !text-white text-center"></div><div class="w-1/3"><label class="label-text">Artist</label><input v-model="editData.artist" class="custom-input !bg-gray-900 !text-white"></div></div><div><label class="label-text">Note</label><input v-model="editData.note" class="custom-input !bg-gray-900 !text-white"></div></div><div class="flex gap-3 mt-6"><button @click="showEditModal = false" class="flex-1 py-2 text-gray-400 hover:text-white">Cancel</button><button @click="saveEditSong" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold">Save</button></div></div></div>
 
 </div>
 
@@ -331,9 +209,35 @@
     createApp({
         data() {
             return {
+                // 👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇
+                // [จุดแก้ไข] ใส่ลิงก์สินค้า และ รูปภาพ ตรงนี้ครับ
+                // 👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇
+                gearList: [
+                    {
+                        name: "ขาตั้ง iPad (รุ่นเวที)",
+                        desc: "เหล็กหนา ไม่โยก แข็งแรงมาก",
+                        link: "https://shopee.co.th/...", 
+                        img: "https://down-th.img.susercontent.com/file/th-11134207-7r992-lslh1e8j050h45"
+                    },
+                    {
+                        name: "Bluetooth Pedal",
+                        desc: "เหยียบเปลี่ยนหน้า ไม่ต้องใช้มือ",
+                        link: "https://shopee.co.th/...",
+                        img: "https://down-th.img.susercontent.com/file/sg-11134201-7rd53-luac6a85w72183"
+                    },
+                    {
+                        name: "Power Bank 20000mAh",
+                        desc: "ชาร์จ iPad เต็มรอบ แบตอึด",
+                        link: "https://shopee.co.th/...",
+                        img: "https://down-th.img.susercontent.com/file/th-11134207-7qukw-ljt8z5z5z5z5z5"
+                    }
+                ],
+                // 👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆
+
                 isSidebarOpen: false, showLibrary: false, showPrintModal: false, showEditModal: false, showNewBandModal: false,
-                showDonateModal: false, showImportModal: false, showHelpModal: false, // NEW: Help Modal State
-                helpLang: 'TH', // NEW: Default Language
+                showDonateModal: false, showImportModal: false, showHelpModal: false, 
+                showGearModal: false, 
+                helpLang: 'TH', 
                 importText: '',
                 search: '', bands: [], idx: 0, 
                 gig: { venue: '', date: '', time: '' },
