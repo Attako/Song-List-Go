@@ -22,13 +22,9 @@
         .custom-input:focus { border-color: #eab308; outline: none; }
         .label-text { font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px; display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        /* --- แก้ไข CSS ตรงนี้ --- */
-        /* เอา touch-action: none ออก เพื่อให้พื้นที่ส่วนใหญ่เลื่อนหน้าจอได้ */
+        /* Mobile Scroll Fix */
         .song-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; items-center; gap: 0.75rem; transform: translate3d(0,0,0); }
-        
-        /* ใส่ touch-action: none เฉพาะที่ตัวจับลาก (Handle) */
         .drag-handle { touch-action: none; cursor: grab; padding: 0.5rem; margin: -0.5rem; }
-        /* ----------------------- */
 
         .sortable-ghost { opacity: 0.2; background: #eab308 !important; }
         .sortable-drag { opacity: 1 !important; background: var(--card-bg); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
@@ -46,7 +42,7 @@
         <div class="p-6 border-b border-gray-800 text-center relative bg-gray-900/50 pt-10">
             <button @click="isSidebarOpen = false" class="absolute top-10 right-4 text-gray-500 md:hidden"><i class="fas fa-times"></i></button>
             <h1 class="text-2xl font-bold text-yellow-500 logo-font">SONGLIST GO</h1>
-            <div class="text-xs text-gray-500 mt-1">v1.0.5</div>
+            <div class="text-xs text-gray-500 mt-1">v1.0.7</div>
         </div>
         <div class="p-4 flex-1 overflow-y-auto flex flex-col">
             <div class="mb-2 text-xs text-gray-500 uppercase font-bold tracking-widest">Select Profile</div>
@@ -58,7 +54,9 @@
             </div>
             <button @click="showNewBandModal = true" class="w-full py-3 border border-dashed border-gray-600 text-gray-400 rounded hover:text-white hover:border-gray-400 transition text-sm mb-4"><i class="fas fa-plus mr-2"></i> Create New Band</button>
             
-            <div class="flex-1"></div> <div class="space-y-3 pt-6 border-t border-gray-700">
+            <div class="flex-1"></div>
+
+            <div class="space-y-3 pt-6 border-t border-gray-700">
                 <button @click="exportData" class="w-full text-left text-blue-400 hover:text-blue-300 text-sm"><i class="fas fa-file-export mr-2 w-5 text-center"></i> Backup Data</button>
                 <button @click="$refs.fileInput.click()" class="w-full text-left text-green-400 hover:text-green-300 text-sm"><i class="fas fa-file-import mr-2 w-5 text-center"></i> Restore Data</button>
                 <input type="file" ref="fileInput" class="hidden" accept=".json" @change="importData">
@@ -97,7 +95,11 @@
                 </div>
                 
                 <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 mb-6 shadow-sm">
-                    <h3 class="text-sm font-bold opacity-70 mb-3 uppercase tracking-wider"><i class="fas fa-music mr-1"></i> Add New Song</h3>
+                    <div class="flex justify-between items-end mb-3">
+                        <h3 class="text-sm font-bold opacity-70 uppercase tracking-wider"><i class="fas fa-music mr-1"></i> Add New Song</h3>
+                        <button @click="showImportModal = true" class="text-xs text-blue-400 hover:text-white font-bold bg-blue-900/30 px-2 py-1 rounded border border-blue-800/50"><i class="fas fa-paste mr-1"></i> Paste List</button>
+                    </div>
+
                     <div class="flex gap-3 mb-3">
                         <div class="w-2/3"><input v-model="newSong.title" @keyup.enter="focusNext('duration')" class="custom-input font-bold text-lg" placeholder="Song Title"></div>
                         <div class="w-1/3"><input v-model="newSong.duration" id="duration" @keyup.enter="focusNext('key')" class="custom-input text-center" placeholder="Min (e.g. 4.30)"></div>
@@ -113,7 +115,6 @@
                 <div ref="listEl" class="space-y-2">
                     <div v-for="(song, index) in songs" :key="song.uid" class="song-card group">
                         <div class="drag-handle opacity-50 px-2 text-yellow-500/50 hover:text-yellow-500 transition-colors"><i class="fas fa-bars fa-lg"></i></div>
-                        
                         <div class="text-xl font-bold opacity-50 w-6 text-center">{{ index + 1 }}</div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
@@ -130,6 +131,23 @@
                     </div>
                     <div v-if="songs.length === 0" class="text-center py-8 opacity-50 border-2 border-dashed border-gray-600 rounded-lg">List is empty. Start adding songs!</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showImportModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 w-full max-w-lg rounded-xl flex flex-col h-[70vh] border border-gray-700 shadow-2xl">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="font-bold text-white text-lg"><i class="fas fa-paste mr-2 text-blue-400"></i> Batch Import</h3>
+                <button @click="showImportModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 flex-1 flex flex-col">
+                <p class="text-sm text-gray-400 mb-2">Paste your song list here. One song per line.</p>
+                <textarea v-model="importText" class="w-full flex-1 bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 outline-none resize-none" placeholder="1. Wonderwall - Oasis&#10;2. Yellow&#10;3. Zombie"></textarea>
+            </div>
+            <div class="p-4 border-t border-gray-700 flex gap-3">
+                <button @click="showImportModal = false" class="flex-1 py-3 text-gray-400 hover:text-white">Cancel</button>
+                <button @click="processImport" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg">Import Songs</button>
             </div>
         </div>
     </div>
@@ -153,18 +171,9 @@
             <div class="bg-gray-900/50 rounded-lg p-3 mb-5 border border-gray-700">
                 <div class="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Show Data:</div>
                 <div class="flex justify-between px-2">
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" v-model="printOptions.showKey">
-                        <span class="text-sm font-bold text-gray-300">Key</span>
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" v-model="printOptions.showTime">
-                        <span class="text-sm font-bold text-gray-300">Time</span>
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" v-model="printOptions.showNote">
-                        <span class="text-sm font-bold text-gray-300">Note</span>
-                    </label>
+                    <label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showKey"><span class="text-sm font-bold text-gray-300">Key</span></label>
+                    <label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showTime"><span class="text-sm font-bold text-gray-300">Time</span></label>
+                    <label class="checkbox-wrapper"><input type="checkbox" v-model="printOptions.showNote"><span class="text-sm font-bold text-gray-300">Note</span></label>
                 </div>
             </div>
 
@@ -180,6 +189,7 @@
                     <li>To save file, select <b>"Save as PDF"</b> as the printer.</li>
                 </ul>
             </div>
+
             <div class="text-center mt-6"><button @click="showPrintModal = false" class="text-gray-400 underline text-sm hover:text-white">Cancel</button></div>
         </div>
     </div>
@@ -187,14 +197,10 @@
     <div v-if="showDonateModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div class="bg-gray-800 w-full max-w-sm rounded-xl border border-gray-700 p-6 shadow-2xl text-center relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 to-yellow-400"></div>
-            <div class="w-16 h-16 bg-yellow-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-coffee text-3xl text-yellow-500"></i>
-            </div>
+            <div class="w-16 h-16 bg-yellow-600/20 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-coffee text-3xl text-yellow-500"></i></div>
             <h3 class="text-xl font-bold text-white mb-2">Fuel the Developer ☕</h3>
             <p class="text-gray-400 text-sm mb-6">If you love this app and it makes your gig easier, you can treat me to a coffee!</p>
-            <div class="bg-white rounded-lg p-4 border border-gray-700 mb-4 inline-block">
-                <img src="donate.jpg" alt="PromptPay QR" class="w-48 h-48 mx-auto object-contain">
-            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-700 mb-4 inline-block"><img src="donate.jpg" alt="PromptPay QR" class="w-48 h-48 mx-auto object-contain"></div>
             <div class="text-xs text-gray-500 mb-6">Scan with Bank App</div>
             <button @click="showDonateModal = false" class="text-gray-400 hover:text-white text-sm">Close</button>
         </div>
@@ -233,7 +239,8 @@
         data() {
             return {
                 isSidebarOpen: false, showLibrary: false, showPrintModal: false, showEditModal: false, showNewBandModal: false,
-                showDonateModal: false,
+                showDonateModal: false, showImportModal: false,
+                importText: '',
                 search: '', bands: [], idx: 0, 
                 gig: { venue: '', date: '', time: '' },
                 newSong: { title: '', key: '', artist: '', note: '', duration: '' },
@@ -317,6 +324,23 @@
                 nextTick(() => this.$refs.listEl.lastElementChild?.scrollIntoView({ behavior: 'smooth' }));
                 this.sync(); 
             },
+            
+            processImport() {
+                if(!this.importText) return;
+                const lines = this.importText.split('\n');
+                lines.forEach(line => {
+                    let clean = line.replace(/^\d+[\.\)]\s*/, '').trim();
+                    if(clean) {
+                        const s = { title: clean, key: '', artist: '', note: '', duration: '', uid: Date.now() + Math.random(), id: Date.now() + Math.random() };
+                        this.songs.push(s);
+                        if(!this.currentBand.library.find(x => x.title === s.title)) { this.currentBand.library.push({...s}); }
+                    }
+                });
+                this.importText = '';
+                this.showImportModal = false;
+                this.sync();
+            },
+
             addFromLib(s) { this.songs.push({...s, uid: Date.now()}); this.showLibrary = false; this.sync(); },
             removeSong(i) { this.songs.splice(i, 1); this.sync(); },
             focusNext(id) { document.getElementById(id).focus(); },
@@ -346,7 +370,6 @@
             },
 
             initSort() { 
-                // ตั้งค่า handle: '.drag-handle' เพื่อให้จับได้เฉพาะจุด
                 Sortable.create(this.$refs.listEl, { 
                     handle: '.drag-handle', 
                     animation: 150, 
